@@ -7,6 +7,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from sklearn.metrics import accuracy_score, log_loss, roc_auc_score
 from xgboost import XGBClassifier
+import joblib
+from pathlib import Path
 
 load_dotenv()
 
@@ -331,6 +333,17 @@ def main() -> None:
             n_jobs=4,
         )
         model.fit(x_train, y_train)
+
+        # Persist trained model for Phase 4 UI
+        models_dir = Path("models")
+        models_dir.mkdir(exist_ok=True)
+        model_path = models_dir / f"xgb_{args.train_season}_to_{args.test_season}.pkl"
+        try:
+            joblib.dump(model, model_path)
+            print(f"Saved trained model to {model_path}")
+        except Exception:
+            # best-effort save; continue even if persistence fails
+            print("Warning: failed to save trained model artifact")
 
         prob_home = model.predict_proba(x_test)[:, 1]
         preds = (prob_home >= 0.5).astype(int)
